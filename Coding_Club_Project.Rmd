@@ -1,0 +1,49 @@
+---
+title: "Coding Club Project"
+output: html_notebook
+---
+
+# Overview
+
+In this experiment, participated adapted to a 30 degree rotation with various types of feedback.
+
+1. Regular cursor feedback (control)
+2. Cursorjump feedback, where the rotation is shown at 1/3rd of the reach on each training trial (cursorjump)
+3. A group where both the cursor and hand were visible during training (handview)
+4. A group that was explained the rotation beforehand (instructed)
+
+All reaches were to targets located at 45, 90, and 135 degrees.
+
+Active localization conditions involved participants freely moving the robot arm within a specified angular range. 
+
+Passive localization conditions involved participants hand being displaced by moving robot arm. 
+
+
+# Data
+
+There are several kinds of data we could analyze:
+
+1. Training reaches
+2. No-cursor reaches
+3. Passive localization
+4. Active localization
+
+Active localization conditions involved participants freely moving the robot arm within a specified angular range. 
+
+Passive localization conditions involved participants hand being displaced by moving robot arm. 
+
+Participants data was collected for both aligned and rotated phases of the task.
+
+# Analysis plan
+
+- For reaches: calculate reach deviation at distance (1/4 of the reach)
+- Hand localization: not yet
+
+# Reach Training
+
+1. Calculate Baseline
+2. Correct rotated reaches for baseline deviations
+3. Plot learning curve
+4. Fit exponential to the learning curve
+
+
