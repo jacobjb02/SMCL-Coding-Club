@@ -39,9 +39,59 @@ Participants data was collected for both aligned and rotated phases of the task.
 - For reaches: calculate reach deviation at distance (1/4 of the reach)
 - Hand localization: not yet
 
+
+
+# Training -----
+
+Did participants learn? Maybe we exclude some.
+
+Did ALL groups learn to the same extent?
+
+Did ALL groups learn quickly?
+
+# No Cursors
+
+There are two types of open-loop reaches. With or without strategy. We could subtract.
+
+In groups with a difference between these two, there is definitely a strategy.
+
+The difference between with and without strategy no-cursor reaches can be a measure of strategy.
+
+# Hand localization
+
+Is there a difference between active and passive localization?
+
+Is there a difference in different conditions?
+
+# Set up
+```{r}
+library('remotes')
+
+ip <- installed.packages()
+
+if ('Reach' %in% ip[,'Package']) {
+    if (ip[which(ip[,'Package'] == 'Reach'), 'Version'] < "2023.12.17") {
+      remotes::install_github('thartbm/Reach')
+  }
+} else {
+  remotes::install_github('thartbm/Reach')
+}
+
+```
+
+# Source project code
+```{r}
+# download and handle data:
+source('R/data.R')
+
+# scripts for training reaches:
+source('R/reaches.R')
+```
+
 # Reach Training
 
-1. Calculate Baseline
+1. Calculate Baseline (trials 31 - 45: 5 reaches per target)
+
 2. Correct rotated reaches for baseline deviations
 3. Plot learning curve
 4. Fit exponential to the learning curve
