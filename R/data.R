@@ -15,3 +15,5 @@ getData <- function() {
                          removezips  = TRUE)
   
 }
+
+getData()
