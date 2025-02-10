@@ -1,3 +1,5 @@
+# Data -----
+
 getData <- function() {
   
   Reach::downloadOSFdata(repository  = 'm5dt4',
@@ -17,3 +19,16 @@ getData <- function() {
 }
 
 getData()
+
+# Participants -----
+
+# gets the list of participants that were in a specific group / condition
+
+groupParticipants <- function(group) {
+  
+  demo <- read.csv('data/demographics.csv', stringsAsFactors = F)
+  
+  participants <- demo$participant[which(demo$group == group)]
+  
+  return(participants)
+}
