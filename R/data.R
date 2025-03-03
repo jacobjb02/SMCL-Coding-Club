@@ -31,7 +31,6 @@ getData <- function() {
                          removezips  = TRUE)
 }
 
-
 # participants -----
 
 # get a list of participants that were in a particular group / condition:

@@ -21,7 +21,7 @@ getGroupTraining <- function(group) {
   
   # print(participants)
   
-  all_baselines <- NA
+ learningCurves <- NA
   
   for (participant in participants) {
     
@@ -32,35 +32,52 @@ getGroupTraining <- function(group) {
     
     baseline <- getBaseline( df = participant_df[['aligned']] )
     
-    baseline$reachdeviation_deg[which(abs(baseline$reachdeviation_deg) >= 50)] <- NA
+    baseline <- removeOutliers(baseline, rotation = 0)
     
-    baseline <- aggregate(reachdeviation_deg ~ targetangle_deg, data=baseline, FUN=median, na.rm=TRUE)
+    baseline <- aggregate(reachdeviation_deg ~ targetangle_deg, data=baseline, FUN=median, na.rm = TRUE)
+  
     
-    baseline$participant <- participant
+    #rotated <- baselineCorrection(baseline=baseline, rotated=rotated)
     
-    if (is.data.frame(all_baselines)) {
-      all_baselines <- rbind(all_baselines, baseline)
+    rotated <- getRotatedLearning(df = participant_df[['rotated']] )
+    
+    rotated <- removeOutliers(rotated, rotation = -60)
+    
+    rotated <- baselineCorrection(baseline=baseline, rotated=rotated)
+    rotated$participant <- participant
+    
+    if (is.data.frame(learningCurves)) {
+      learningCurves <- rbind(learningCurves, rotated)
     } else {
-      all_baselines <- baseline
+      learningCurves <- rotated
     }
-    
-    # removeOutliers(baseline, rotation=0)
-    
-    # rotated <- getRotatedLearning( df = participant_df[['rotated']] )
     
     # removeOutliers(rotated, rotation=30)
     
   }
   
-  plot(x=all_baselines$trial_num,
-       y=all_baselines$reachdeviation_deg)
+  plot(x=learningCurves$trial_num,
+       y=learningCurves$reachdeviation_deg)
+  
+  return(learningCurves)
   
 }
 
 getBaseline <- function(df) {
   
-  # str(df)
-  df <- df[which(df$trial_num %in% c(31:45)),]
+  
+  schedule <- read.csv('data/schedule.csv', stringsAsFactors = F)
+  subtasks <- unique(schedule[which(schedule$session == 'aligned' & schedule$task == 'training'),]$subtask)
+
+  
+  trialnums <- c(31:45)
+  
+  for (subtask in subtasks[c(2:length(subtasks))]) {
+    sttn <- schedule$trial_num[which(schedule$subtask == subtask)]
+    trialnums <- c(trialnums, sttn[7:9])
+  }
+  
+  df <- df[which(df$trial_num %in% c(trialnums)),]
   # str(df)
   
   trialnos <- unique(df$trial_num)
@@ -123,3 +140,91 @@ getReachDeviation <- function(df) {
            'reachdeviation_deg'=reachdev))
   
 }
+
+
+
+
+
+
+removeOutliers <- function(df, rotation=0) {
+  
+  windowwidth <- 50
+  
+  if (rotation == 0) {
+    
+  df$reachdeviation_deg[which(abs(df$reachdeviation_deg) > windowwidth)] <- NA
+  } else {
+  hi <- windowwidth
+  lo <- windowwidth
+    if (rotation >0) {
+      lo <- low - rotation
+    } else {
+      hi <- hi - rotation
+    }
+  
+  df$reachdeviation_deg[which(df$reachdeviation_deg > hi)] <- NA
+  df$reachdeviation_deg[which(df$reachdeviation_deg < lo)] <- NA
+  
+  }
+  
+  return(df)
+}
+
+
+
+
+
+
+
+
+getRotatedLearning <- function(df) {
+  
+  
+  schedule <- read.csv('data/schedule.csv', stringsAsFactors = F)
+  subtasks <- unique(schedule[which(schedule$session == 'aligned' & schedule$task == 'training'),]$subtask)
+  
+  
+  trialnums <- c(1:90)
+  
+  df <- df[which(df$trial_num %in% c(trialnums)),]
+  # str(df)
+  
+  trialnos <- unique(df$trial_num)
+  
+  outdf <- NA
+  
+  for (trial in trialnos) {
+    
+    tdf <- df[which(df$trial_num == trial),]
+    
+    reachdev <- getReachDeviation(tdf)
+    
+    reachdev <- data.frame(t(data.frame(reachdev)))
+    
+    if (is.data.frame(outdf)) {
+      outdf <- rbind(outdf, reachdev)
+    } else {
+      outdf <- reachdev
+    }
+    
+  }
+  
+  return(outdf)
+  
+}
+
+
+baselineCorrection <- function(baseline=baseline, rotated=rotated) {
+  
+  for (target in baseline$targetangle_deg) {
+    
+    #print(target)
+    
+    baselineBias <- baseline$reachdeviation[which(baseline$targetangle_deg == target)]
+    
+    rotated$reachdeviation_deg[which(rotated$targetangle_deg == target)] <- rotated$reachdeviation_deg[which(rotated$targetangle_deg == target)] - baselineBias
+  }
+  
+  return(rotated)
+}
+
