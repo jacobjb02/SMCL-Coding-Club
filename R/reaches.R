@@ -1,4 +1,26 @@
 
+# training reach deviations ----
+
+getAllTraining <- function() {
+  
+  groups <- c('control', 'cursorjump', 'handview')
+  
+  for (group in groups) {
+    
+    df <- getGroupTraining(group)
+    
+    filename <- sprintf('data/%s/%s_training_reachdevs.csv', group, group)
+    
+    write.csv( df,
+               filename,
+               row.names=FALSE)
+    
+  }
+  
+}
+
+
+
 getParticipantTraining <- function(group, participant) {
   
   AL_file <- sprintf('data/%s/%s/%s_aligned_training.csv', group, participant, participant)
@@ -21,7 +43,7 @@ getGroupTraining <- function(group) {
   
   # print(participants)
   
- learningCurves <- NA
+  learningCurves <- NA
   
   for (participant in participants) {
     
@@ -34,16 +56,14 @@ getGroupTraining <- function(group) {
     
     baseline <- removeOutliers(baseline, rotation = 0)
     
-    baseline <- aggregate(reachdeviation_deg ~ targetangle_deg, data=baseline, FUN=median, na.rm = TRUE)
-  
+    baseline <- aggregate(reachdeviation_deg ~ targetangle_deg, data=baseline, FUN=median, na.rm=TRUE)
     
-    #rotated <- baselineCorrection(baseline=baseline, rotated=rotated)
+    rotated <- getRotatedLearning( df = participant_df[['rotated']] )
     
-    rotated <- getRotatedLearning(df = participant_df[['rotated']] )
-    
-    rotated <- removeOutliers(rotated, rotation = -60)
+    rotated <- removeOutliers(rotated, rotation = -30)
     
     rotated <- baselineCorrection(baseline=baseline, rotated=rotated)
+    
     rotated$participant <- participant
     
     if (is.data.frame(learningCurves)) {
@@ -52,12 +72,24 @@ getGroupTraining <- function(group) {
       learningCurves <- rotated
     }
     
+    # str(rotated)
+    
+    # print(participant)
+    # print(length(which(is.na(rotated$reachdeviation_deg))))
+    # 
+    # if (participant %in% c("3c0021","c831b7")){
+    #   plot(rotated$reachdeviation_deg)
+    # }
+    
+    
+    # rotated <- getRotatedLearning( df = participant_df[['rotated']] )
+    
     # removeOutliers(rotated, rotation=30)
     
   }
   
-  plot(x=learningCurves$trial_num,
-       y=learningCurves$reachdeviation_deg)
+  # plot(x=learningCurves$trial_num,
+  #      y=learningCurves$reachdeviation_deg)
   
   return(learningCurves)
   
@@ -65,20 +97,20 @@ getGroupTraining <- function(group) {
 
 getBaseline <- function(df) {
   
-  
   schedule <- read.csv('data/schedule.csv', stringsAsFactors = F)
   subtasks <- unique(schedule[which(schedule$session == 'aligned' & schedule$task == 'training'),]$subtask)
-
   
   trialnums <- c(31:45)
-  
   for (subtask in subtasks[c(2:length(subtasks))]) {
     sttn <- schedule$trial_num[which(schedule$subtask == subtask)]
     trialnums <- c(trialnums, sttn[7:9])
   }
   
-  df <- df[which(df$trial_num %in% c(trialnums)),]
   # str(df)
+  df <- df[which(df$trial_num %in% trialnums),]
+  # str(df)
+  
+  
   
   trialnos <- unique(df$trial_num)
   
@@ -103,6 +135,38 @@ getBaseline <- function(df) {
   return(outdf)
   
 }
+
+
+getRotatedLearning <- function(df) {
+  
+  trialnums <- c(1:90)
+  
+  df <- df[which(df$trial_num %in% trialnums),]
+  
+  trialnos <- unique(df$trial_num)
+  
+  outdf <- NA
+  
+  for (trial in trialnos) {
+    
+    tdf <- df[which(df$trial_num == trial),]
+    
+    reachdev <- getReachDeviation(tdf)
+    
+    reachdev <- data.frame(t(data.frame(reachdev)))
+    
+    if (is.data.frame(outdf)) {
+      outdf <- rbind(outdf, reachdev)
+    } else {
+      outdf <- reachdev
+    }
+    
+  }
+  
+  return(outdf)
+  
+}
+
 
 getReachDeviation <- function(df) {
   
@@ -141,75 +205,33 @@ getReachDeviation <- function(df) {
   
 }
 
-
-
-
-
-
 removeOutliers <- function(df, rotation=0) {
   
   windowwidth <- 50
   
   if (rotation == 0) {
     
-  df$reachdeviation_deg[which(abs(df$reachdeviation_deg) > windowwidth)] <- NA
+    df$reachdeviation_deg[which(abs(df$reachdeviation_deg) > windowwidth)] <- NA
+    # df$reachdeviation_deg[which(df$reachdeviation_deg >  windowwidth)] <- NA
+    # df$reachdeviation_deg[which(df$reachdeviation_deg < -windowwidth)] <- NA
+    
   } else {
-  hi <- windowwidth
-  lo <- windowwidth
-    if (rotation >0) {
-      lo <- low - rotation
+    
+    hi <-  windowwidth
+    lo <- -windowwidth
+    
+    if (rotation > 0) {
+      lo <- lo - rotation
     } else {
       hi <- hi - rotation
     }
-  
-  df$reachdeviation_deg[which(df$reachdeviation_deg > hi)] <- NA
-  df$reachdeviation_deg[which(df$reachdeviation_deg < lo)] <- NA
-  
+    
+    df$reachdeviation_deg[which(df$reachdeviation_deg > hi)] <- NA
+    df$reachdeviation_deg[which(df$reachdeviation_deg < lo)] <- NA
+    
   }
   
   return(df)
-}
-
-
-
-
-
-
-
-
-getRotatedLearning <- function(df) {
-  
-  
-  schedule <- read.csv('data/schedule.csv', stringsAsFactors = F)
-  subtasks <- unique(schedule[which(schedule$session == 'aligned' & schedule$task == 'training'),]$subtask)
-  
-  
-  trialnums <- c(1:90)
-  
-  df <- df[which(df$trial_num %in% c(trialnums)),]
-  # str(df)
-  
-  trialnos <- unique(df$trial_num)
-  
-  outdf <- NA
-  
-  for (trial in trialnos) {
-    
-    tdf <- df[which(df$trial_num == trial),]
-    
-    reachdev <- getReachDeviation(tdf)
-    
-    reachdev <- data.frame(t(data.frame(reachdev)))
-    
-    if (is.data.frame(outdf)) {
-      outdf <- rbind(outdf, reachdev)
-    } else {
-      outdf <- reachdev
-    }
-    
-  }
-  
-  return(outdf)
   
 }
 
@@ -218,13 +240,16 @@ baselineCorrection <- function(baseline=baseline, rotated=rotated) {
   
   for (target in baseline$targetangle_deg) {
     
-    #print(target)
+    bias <- baseline$reachdeviation_deg[which(baseline$targetangle_deg == target)]
+    idx <- which(rotated$targetangle_deg == target)
+    rotated$reachdeviation_deg[idx] <- rotated$reachdeviation_deg[idx] - bias
     
-    baselineBias <- baseline$reachdeviation[which(baseline$targetangle_deg == target)]
-    
-    rotated$reachdeviation_deg[which(rotated$targetangle_deg == target)] <- rotated$reachdeviation_deg[which(rotated$targetangle_deg == target)] - baselineBias
   }
   
   return(rotated)
+  
 }
+
+
+# no cursor reach deviations ----
 
